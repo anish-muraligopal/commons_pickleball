@@ -416,6 +416,24 @@
     .book-wrap { padding: 22px 14px; }
   }
 
+  @media(pointer:coarse) {
+    #ball, #ring { display: block; opacity: 0; }
+    #ball.touching, #ring.touching { opacity: 1; }
+    #ball { width: 26px; height: 26px; transition: opacity .18s, width .18s, height .18s; }
+    #ring { width: 48px; height: 48px; transition: opacity .18s, transform .18s; }
+    a:active, button:active, .card:active, .plan:active, .stat:active, .icon-nav a:active {
+      transform: translateY(-2px) scale(.98);
+    }
+    .plan:active {
+      border-color: rgba(87,227,166,.55);
+      box-shadow: 0 22px 58px rgba(0,0,0,.4), 0 0 26px rgba(87,227,166,.12), inset 0 0 30px rgba(87,227,166,.04);
+    }
+    .touch-pop {
+      border-color: rgba(87,227,166,.55) !important;
+      box-shadow: 0 0 24px rgba(87,227,166,.16), inset 0 0 18px rgba(87,227,166,.05) !important;
+    }
+  }
+
   @media(prefers-reduced-motion:reduce) { *, .reveal { animation: none !important; transition: none !important; } .reveal { opacity: 1; transform: none; } .grid-bg { display: none; } }
 </style>
 </head>
@@ -809,6 +827,55 @@
       tr.el.style.transform='translate(-50%,-50%) scale('+Math.max(tr.life,0.1)+')'; }
     requestAnimationFrame(loop); }
   loop();
+})();
+
+/* mobile pickleball tap feedback */
+(function(){
+  if (!matchMedia('(pointer:coarse)').matches) return;
+  const ball=document.getElementById('ball'), ring=document.getElementById('ring');
+  if(!ball || !ring) return;
+  let fadeTimer;
+
+  function place(x,y){
+    ball.style.left=x+'px'; ball.style.top=y+'px';
+    ring.style.left=x+'px'; ring.style.top=y+'px';
+    ball.classList.add('touching'); ring.classList.add('touching');
+    ring.style.transform='translate(-50%,-50%) scale(1.35)';
+
+    const t=document.createElement('div');
+    t.className='trail';
+    t.style.left=x+'px'; t.style.top=y+'px';
+    t.style.width='10px'; t.style.height='10px';
+    document.body.appendChild(t);
+    requestAnimationFrame(()=>{
+      t.style.transition='opacity .42s, transform .42s';
+      t.style.opacity='0';
+      t.style.transform='translate(-50%,-50%) scale(2.8)';
+    });
+    setTimeout(()=>t.remove(),460);
+
+    clearTimeout(fadeTimer);
+    fadeTimer=setTimeout(()=>{
+      ball.classList.remove('touching'); ring.classList.remove('touching');
+      ring.style.transform='translate(-50%,-50%) scale(1)';
+    },650);
+  }
+
+  addEventListener('touchstart', e=>{
+    const touch=e.touches && e.touches[0];
+    if(!touch) return;
+    place(touch.clientX,touch.clientY);
+    const target=e.target.closest && e.target.closest('a,button,.card,.plan,.stat,input,select,textarea');
+    if(target){
+      target.classList.add('touch-pop');
+      setTimeout(()=>target.classList.remove('touch-pop'),260);
+    }
+  }, {passive:true});
+
+  addEventListener('touchmove', e=>{
+    const touch=e.touches && e.touches[0];
+    if(touch) place(touch.clientX,touch.clientY);
+  }, {passive:true});
 })();
 
 /* ── scroll reveal ── */
